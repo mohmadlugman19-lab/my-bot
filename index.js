@@ -1,8 +1,8 @@
 
 
-const { Telegraf } = require('telegraf');
-const http = require('http');
-const fetch = require('node-fetch');
+oconstonst { Telegraf } = require('telegraf');
+cohttphttp = require('http');
+const fetch = require('node-fetch'); // تأكد من تثبيته: npm install node-fetch
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -12,16 +12,15 @@ bot.catch((err, ctx) => {
   ctx.reply('حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.');
 });
 
-// الأوامر الأساسية
 bot.start((ctx) => ctx.reply('مرحباً! أنا جاهز للرد على استفساراتك.'));
-bot.help((ctx) => ctx.reply('أرسل أي نص وسأرد عليك باستخدام الذكاء الاصطناعي.'));
 
 bot.on('text', async (ctx) => {
   // التحقق من وجود نص
   if (!ctx.message.text) return ctx.reply('الرجاء إرسال نص للرد عليه.');
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.API_KEY}`, {
+    // استخدام النموذج الصحيح gemini-pro (بدلاً من gemini-1.5-flash)
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -38,13 +37,13 @@ bot.on('text', async (ctx) => {
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (text) {
-      // التعامل مع الرسائل الطويلة وتقسيمها
+      // تقسيم النص الطويل مع دعم Markdown
       if (text.length > 4096) {
         for (let i = 0; i < text.length; i += 4096) {
           await ctx.reply(text.substring(i, i + 4096), { parse_mode: 'Markdown' });
         }
       } else {
-        ctx.reply(text, { parse_mode: 'Markdown' });
+        await ctx.reply(text, { parse_mode: 'Markdown' });
       }
     } else {
       ctx.reply('لم يتمكن الذكاء الاصطناعي من توليد رد.');
@@ -55,14 +54,14 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// تشغيل الخادم للمراقبة
+// خادم HTTP للمراقبة
 const server = http.createServer((req, res) => {
   res.writeHead(200);
   res.end('Bot is running');
 });
 server.listen(process.env.PORT || 3000);
 
-// الإغلاق الآمن
+// إيقاف نظيف
 process.once('SIGINT', () => { bot.stop('SIGINT'); server.close(); });
 process.once('SIGTERM', () => { bot.stop('SIGTERM'); server.close(); });
 
