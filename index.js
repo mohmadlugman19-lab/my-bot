@@ -1,5 +1,5 @@
 
-c
+
 const { Telegraf } = require('telegraf');
 const http = require('http');
 const fetch = require('node-fetch');
