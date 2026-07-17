@@ -1,8 +1,8 @@
 
 
-oconstonst { Telegraf } = require('telegraf');
-cohttphttp = require('http');
-const fetch = require('node-fetch'); // تأكد من تثبيته: npm install node-fetch
+const { Telegraf } = require('telegraf');
+const http = require('http');
+const fetch = require('node-fetch');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -13,13 +13,14 @@ bot.catch((err, ctx) => {
 });
 
 bot.start((ctx) => ctx.reply('مرحباً! أنا جاهز للرد على استفساراتك.'));
+bot.help((ctx) => ctx.reply('أرسل أي نص وسأرد عليك باستخدام الذكاء الاصطناعي.'));
 
 bot.on('text', async (ctx) => {
   // التحقق من وجود نص
   if (!ctx.message.text) return ctx.reply('الرجاء إرسال نص للرد عليه.');
 
   try {
-    // استخدام النموذج الصحيح gemini-pro (بدلاً من gemini-1.5-flash)
+    // الاتصال بـ Gemini
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -37,7 +38,7 @@ bot.on('text', async (ctx) => {
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (text) {
-      // تقسيم النص الطويل مع دعم Markdown
+      // تقسيم النص الطويل
       if (text.length > 4096) {
         for (let i = 0; i < text.length; i += 4096) {
           await ctx.reply(text.substring(i, i + 4096), { parse_mode: 'Markdown' });
@@ -54,14 +55,14 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// خادم HTTP للمراقبة
+// تشغيل الخادم للمراقبة
 const server = http.createServer((req, res) => {
   res.writeHead(200);
   res.end('Bot is running');
 });
 server.listen(process.env.PORT || 3000);
 
-// إيقاف نظيف
+// الإغلاق الآمن
 process.once('SIGINT', () => { bot.stop('SIGINT'); server.close(); });
 process.once('SIGTERM', () => { bot.stop('SIGTERM'); server.close(); });
 
